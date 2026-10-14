@@ -19,6 +19,11 @@ local testing; they have not received a security audit.
 | Gmail for Android | 2026.10.05.993506826 | Audit and patch/policy source | APK; not device-tested |
 | Spotify for Android | 9.1.90.2270 | Audit and patch/policy source | APK; not device-tested |
 | Stremio | Desktop 5.1.27, Android 2.4.0, Web commit `9d1d526` | Companion source, desktop builder, Web patch, tests, and sanitized Android/desktop notes | macOS archive and arm64 split APK set; experimental |
+| Discord for Android | 348.10 Stable | Audit and version-pinned apktool/smali patch | Split APK set; login screen tested on Android 17 |
+| X for Android | 12.33.1-prod.01 | Audit and version-pinned manifest patch | Split APK set; login screen tested on Android 17 |
+| Bluesky for Android | 1.134.0 | Audit and version-pinned apktool/smali patch | Split APK set; login screen tested on Android 17 |
+| Claude for Android | 1.260923.20 | Audit and version-pinned apktool/smali patch | Split APK set; rebuilt and signature-verified, not device-tested |
+| ChatGPT for Android | 1.2026.279 | Audit and version-pinned apktool manifest patch | Split APK set; rebuilt and signature-verified, not device-tested |
 
 The source tree contains only the work added for these experiments and the
 notes needed to reproduce or inspect it. It is not a complete source release of
