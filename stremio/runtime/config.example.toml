@@ -1,0 +1,46 @@
+[server]
+host = "127.0.0.1"
+port = 7000
+request_timeout_seconds = 12
+max_response_bytes = 2000000
+# state_dir = "/absolute/path/to/private/state"
+
+[cache]
+ttl_seconds = 900
+stale_seconds = 86400
+refresh_seconds = 900
+
+[secrets]
+# "keychain" is recommended on macOS. "file" is a portable 0600 fallback.
+backend = "keychain"
+# A mode-0600 dotenv overlay is read first. On macOS the default is:
+# ~/Library/Application Support/Stremio Private/.env
+
+[connectors]
+trakt = true
+premiumize = true
+tmdb = true
+compatibility = true
+
+[addons]
+# Optional mode-0600 file containing explicitly migrated personal addon
+# descriptors. It is never bundled into the app or source archive.
+# file = "~/Library/Application Support/Stremio Private/addons.json"
+
+[tmdb]
+region = "US"
+providers = [
+  { id = "netflix", name = "Netflix", provider_id = 8 },
+  { id = "max", name = "Max", provider_id = 189 },
+]
+
+[playback]
+# Preferences consumed by the patched desktop/Android clients. No URLs or tokens.
+macos = ["vlc", "system", "internal"]
+android = ["vlc", "mx_player", "system", "internal"]
+
+[playlist]
+# Blank by default. Only explicit local M3U files are read. Each stream must use
+# HTTPS on one of these exact hosts and must not contain URL credentials/query tokens.
+files = []
+allowed_hosts = []

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.local.stremio-private</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>REPLACE_WITH_VENV_PYTHON</string>
+    <string>-m</string>
+    <string>stremio_private</string>
+    <string>--config</string>
+    <string>REPLACE_WITH_CONFIG_PATH</string>
+    <string>serve</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/tmp/stremio-private.out</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/stremio-private.err</string>
+</dict>
+</plist>

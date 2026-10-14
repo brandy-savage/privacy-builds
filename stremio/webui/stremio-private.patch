@@ -1,0 +1,850 @@
+diff --git a/package.json b/package.json
+index 1dcdcbe..53e9288 100644
+--- a/package.json
++++ b/package.json
+@@ -20,7 +20,6 @@
+     },
+     "dependencies": {
+         "@babel/runtime": "7.29.2",
+-        "@sentry/browser": "8.42.0",
+         "@stremio/stremio-colors": "5.2.0",
+         "@stremio/stremio-core-web": "0.65.1",
+         "@stremio/stremio-icons": "5.15.0",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index ec2e2ee..ff4bd72 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -11,9 +11,6 @@ importers:
+       '@babel/runtime':
+         specifier: 7.29.2
+         version: 7.29.2
+-      '@sentry/browser':
+-        specifier: 8.42.0
+-        version: 8.42.0
+       '@stremio/stremio-colors':
+         specifier: 5.2.0
+         version: 5.2.0
+@@ -1400,30 +1397,6 @@ packages:
+     cpu: [x64]
+     os: [win32]
+ 
+-  '@sentry-internal/browser-utils@8.42.0':
+-    resolution: {integrity: sha512-xzgRI0wglKYsPrna574w1t38aftuvo44gjOKFvPNGPnYfiW9y4m+64kUz3JFbtanvOrKPcaITpdYiB4DeJXEbA==}
+-    engines: {node: '>=14.18'}
+-
+-  '@sentry-internal/feedback@8.42.0':
+-    resolution: {integrity: sha512-dkIw5Wdukwzngg5gNJ0QcK48LyJaMAnBspqTqZ3ItR01STi6Z+6+/Bt5XgmrvDgRD+FNBinflc5zMmfdFXXhvw==}
+-    engines: {node: '>=14.18'}
+-
+-  '@sentry-internal/replay-canvas@8.42.0':
+-    resolution: {integrity: sha512-XrPErqVhPsPh/oFLVKvz7Wb+Fi2J1zCPLeZCxWqFuPWI2agRyLVu0KvqJyzSpSrRAEJC/XFzuSVILlYlXXSfgA==}
+-    engines: {node: '>=14.18'}
+-
+-  '@sentry-internal/replay@8.42.0':
+-    resolution: {integrity: sha512-oNcJEBlDfXnRFYC5Mxj5fairyZHNqlnU4g8kPuztB9G5zlsyLgWfPxzcn1ixVQunth2/WZRklDi4o1ZfyHww7w==}
+-    engines: {node: '>=14.18'}
+-
+-  '@sentry/browser@8.42.0':
+-    resolution: {integrity: sha512-lStrEk609KJHwXfDrOgoYVVoFFExixHywxSExk7ZDtwj2YPv6r6Y1gogvgr7dAZj7jWzadHkxZ33l9EOSJBfug==}
+-    engines: {node: '>=14.18'}
+-
+-  '@sentry/core@8.42.0':
+-    resolution: {integrity: sha512-ac6O3pgoIbU6rpwz6LlwW0wp3/GAHuSI0C5IsTgIY6baN8rOBnlAtG6KrHDDkGmUQ2srxkDJu9n1O6Td3cBCqw==}
+-    engines: {node: '>=14.18'}
+-
+   '@sinclair/typebox@0.27.10':
+     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
+ 
+@@ -6535,34 +6508,6 @@ snapshots:
+   '@rollup/rollup-win32-x64-msvc@4.60.3':
+     optional: true
+ 
+-  '@sentry-internal/browser-utils@8.42.0':
+-    dependencies:
+-      '@sentry/core': 8.42.0
+-
+-  '@sentry-internal/feedback@8.42.0':
+-    dependencies:
+-      '@sentry/core': 8.42.0
+-
+-  '@sentry-internal/replay-canvas@8.42.0':
+-    dependencies:
+-      '@sentry-internal/replay': 8.42.0
+-      '@sentry/core': 8.42.0
+-
+-  '@sentry-internal/replay@8.42.0':
+-    dependencies:
+-      '@sentry-internal/browser-utils': 8.42.0
+-      '@sentry/core': 8.42.0
+-
+-  '@sentry/browser@8.42.0':
+-    dependencies:
+-      '@sentry-internal/browser-utils': 8.42.0
+-      '@sentry-internal/feedback': 8.42.0
+-      '@sentry-internal/replay': 8.42.0
+-      '@sentry-internal/replay-canvas': 8.42.0
+-      '@sentry/core': 8.42.0
+-
+-  '@sentry/core@8.42.0': {}
+-
+   '@sinclair/typebox@0.27.10': {}
+ 
+   '@sindresorhus/merge-streams@2.3.0': {}
+diff --git a/src/App/App.js b/src/App/App.js
+index e85b019..334e052 100644
+--- a/src/App/App.js
++++ b/src/App/App.js
+@@ -17,9 +17,13 @@ const { default: ShortcutsModal } = require('./ShortcutsModal');
+ const { default: GamepadModal } = require('./GamepadModal');
+ const { default: useInterfaceScale } = require('./useInterfaceScale');
+ const styles = require('./styles');
++const { isPrivateBlockedAddon } = require('../common/privateAddons');
+ 
+ const ProtectedRoutes = withCoreSuspender(Routes);
+ const NAVIGATE_TABS_ROUTES = ['/', '/discover', '/library', '/calendar', '/addons', '/settings'];
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
++const PRIVATE_ADDON_INDEX_URL = 'http://127.0.0.1:17100/addons/index.json';
+ 
+ const App = () => {
+     const core = useCore();
+@@ -40,6 +44,8 @@ const App = () => {
+     }, []);
+     const [shortcutModalOpen,, closeShortcutsModal, toggleShortcutModal] = useBinaryState(false);
+     const [gamepadModalOpen,, closeGamepadModal, toggleGamepadModal] = useBinaryState(false);
++    const privateAddonsInstallAttempted = React.useRef(false);
++    const privateBlockedAddonRemovals = React.useRef(new Set());
+ 
+     const onShortcut = React.useCallback((name, combo, key) => {
+         switch (name) {
+@@ -118,8 +124,73 @@ const App = () => {
+         }
+     }, [profile.settings, i18n, shell]);
+ 
++    React.useEffect(() => {
++        if (PRIVATE_LOCAL_MODE && location.pathname.startsWith('/intro')) {
++            navigate('/', { replace: true });
++        }
++    }, [location.pathname, navigate]);
++
++    React.useEffect(() => {
++        if (!PRIVATE_LOCAL_MODE) {
++            return;
++        }
++        for (const addon of Array.isArray(profile.addons) ? profile.addons : []) {
++            if (!isPrivateBlockedAddon(addon)) {
++                continue;
++            }
++            const removalKey = addon.transportUrl || addon.manifest?.id;
++            if (!removalKey || privateBlockedAddonRemovals.current.has(removalKey)) {
++                continue;
++            }
++            privateBlockedAddonRemovals.current.add(removalKey);
++            core.transport.dispatch({
++                action: 'Ctx',
++                args: {
++                    action: 'UninstallAddon',
++                    args: addon,
++                }
++            });
++        }
++    }, [core.transport, profile.addons]);
++
++    React.useEffect(() => {
++        if (!PRIVATE_LOCAL_MODE || privateAddonsInstallAttempted.current) {
++            return;
++        }
++        privateAddonsInstallAttempted.current = true;
++        const installed = new Set((Array.isArray(profile.addons) ? profile.addons : []).flatMap((addon) => [
++            addon.transportUrl,
++            addon.manifest?.id,
++        ]).filter(Boolean));
++        fetch(PRIVATE_ADDON_INDEX_URL, { cache: 'no-store' })
++            .then((response) => {
++                if (!response.ok) throw new Error(`HTTP ${response.status}`);
++                return response.json();
++            })
++            .then(async ({ addons }) => {
++                for (const addon of Array.isArray(addons) ? addons : []) {
++                    if (!addon?.transportUrl || !addon?.manifest?.id || installed.has(addon.transportUrl) || installed.has(addon.manifest.id)) {
++                        continue;
++                    }
++                    await core.transport.dispatch({
++                        action: 'Ctx',
++                        args: {
++                            action: 'InstallAddon',
++                            args: addon,
++                        }
++                    });
++                    installed.add(addon.transportUrl);
++                    installed.add(addon.manifest.id);
++                }
++            })
++            .catch((error) => console.warn('Private addon index is unavailable:', error));
++    }, [core.transport, profile.addons]);
++
+     React.useEffect(() => {
+         const onWindowFocus = () => {
++            if (PRIVATE_LOCAL_MODE) {
++                return;
++            }
+             core.transport.dispatch({
+                 action: 'Ctx',
+                 args: {
+diff --git a/src/App/SearchParamsHandler.js b/src/App/SearchParamsHandler.js
+index c6b4668..a0080f5 100644
+--- a/src/App/SearchParamsHandler.js
++++ b/src/App/SearchParamsHandler.js
+@@ -3,7 +3,7 @@
+ const React = require('react');
+ const { createPath, useLocation } = require('react-router');
+ const { useCore } = require('stremio/core');
+-const { CONSTANTS, withCoreSuspender, useModelState, useProfile, useToast } = require('stremio/common');
++const { CONSTANTS, withCoreSuspender, useModelState, useProfile, useToast, usePlatform } = require('stremio/common');
+ const { default: StreamingServerUrlModal } = require('./StreamingServerUrlModal');
+ 
+ const DEFAULT_STREAMING_SERVER_URLS = new Set([
+@@ -11,6 +11,8 @@ const DEFAULT_STREAMING_SERVER_URLS = new Set([
+     new URL('http://localhost:11470').href,
+ ]);
+ const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost']);
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
+ 
+ const parse = (value) => {
+     try {
+@@ -30,10 +32,13 @@ const SearchParamsHandler = () => {
+     const core = useCore();
+     const profile = useProfile();
+     const toast = useToast();
++    const { shell } = usePlatform();
+     const { streamingServerUrls } = useModelState({ model: 'ctx', map: map });
+ 
+     const { searchParams } = new URL(`${window.location.origin}${createPath(location)}${window.location.search}`);
+-    const streamingServerUrl = searchParams.getAll('streamingServerUrl').pop() ?? null;
++    const streamingServerUrl = shell.state.streamingServerUrl ||
++        searchParams.getAll('streamingServerUrl').pop() ||
++        (PRIVATE_LOCAL_MODE ? CONSTANTS.DEFAULT_STREAMING_SERVER_URL : null);
+     const [requested, set] = React.useState(null);
+     const handledStreamingServerUrlRef = React.useRef(null);
+ 
+@@ -95,7 +100,7 @@ const SearchParamsHandler = () => {
+             return;
+         }
+ 
+-        if (loopback(parsed) && selected !== null && !loopback(selected)) {
++        if (!PRIVATE_LOCAL_MODE && loopback(parsed) && selected !== null && !loopback(selected)) {
+             return;
+         }
+ 
+diff --git a/src/components/NavBar/HorizontalNavBar/NavMenu/NavMenuContent.js b/src/components/NavBar/HorizontalNavBar/NavMenu/NavMenuContent.js
+index 1b48ffc..592b4c0 100644
+--- a/src/components/NavBar/HorizontalNavBar/NavMenu/NavMenuContent.js
++++ b/src/components/NavBar/HorizontalNavBar/NavMenu/NavMenuContent.js
+@@ -16,6 +16,8 @@ const useToast = require('stremio/common/Toast/useToast');
+ const { withCoreSuspender } = require('stremio/common/CoreSuspender');
+ const useStreamingServer = require('stremio/common/useStreamingServer');
+ const styles = require('./styles');
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
+ 
+ const NavMenuContent = ({ onClick }) => {
+     const { t } = useTranslation();
+@@ -79,11 +81,16 @@ const NavMenuContent = ({ onClick }) => {
+                 />
+                 <div className={styles['user-info-details']}>
+                     <div className={styles['email-container']}>
+-                        <div className={styles['email-label']}>{profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}</div>
++                        <div className={styles['email-label']}>{PRIVATE_LOCAL_MODE ? 'Local Profile' : profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}</div>
+                     </div>
+-                    <Button className={styles['logout-button-container']} title={profile.auth === null ? `${t('LOG_IN')} / ${t('SIGN_UP')}` : t('LOG_OUT')} onClick={handleAuth}>
+-                        <div className={styles['logout-label']}>{profile.auth === null ? `${t('LOG_IN')} / ${t('SIGN_UP')}` : t('LOG_OUT')}</div>
+-                    </Button>
++                    {
++                        PRIVATE_LOCAL_MODE ?
++                            null
++                            :
++                            <Button className={styles['logout-button-container']} title={profile.auth === null ? `${t('LOG_IN')} / ${t('SIGN_UP')}` : t('LOG_OUT')} onClick={handleAuth}>
++                                <div className={styles['logout-label']}>{profile.auth === null ? `${t('LOG_IN')} / ${t('SIGN_UP')}` : t('LOG_OUT')}</div>
++                            </Button>
++                    }
+                 </div>
+             </div>
+             {
+diff --git a/src/core/createTransport.ts b/src/core/createTransport.ts
+index 019ba15..5723144 100644
+--- a/src/core/createTransport.ts
++++ b/src/core/createTransport.ts
+@@ -24,8 +24,11 @@ const createTransport = (): CoreTransport => {
+         return bridge.call(['decodeStream'], [stream]);
+     };
+ 
++    // Privacy build: keep the UI call surface intact, but never forward
++    // navigation, stream, or interaction events into the core analytics queue.
+     const analytics = (event: object): Promise<void> => {
+-        return bridge.call(['analytics'], [event, location.hash]);
++        void event;
++        return Promise.resolve();
+     };
+ 
+     return {
+diff --git a/src/index.html b/src/index.html
+index 409fd43..0a992d2 100644
+--- a/src/index.html
++++ b/src/index.html
+@@ -65,8 +65,6 @@
+ <body>
+     <div id="app"></div>
+     <%= htmlWebpackPlugin.tags.bodyTags %>
+-    <script src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+-    <script async src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
+ </body>
+ 
+-</html>
+\ No newline at end of file
++</html>
+diff --git a/src/index.js b/src/index.js
+index 0b20752..10c73f0 100755
+--- a/src/index.js
++++ b/src/index.js
+@@ -1,10 +1,90 @@
+ // Copyright (C) 2017-2023 Smart code 203358507
+ 
+-if (typeof process.env.SENTRY_DSN === 'string') {
+-    const Sentry = require('@sentry/browser');
+-    Sentry.init({ dsn: process.env.SENTRY_DSN });
++// Privacy build: crash reports remain local.  Do not initialize Sentry even if
++// a build-time environment variable is accidentally present.
++
++const { isPrivateBlockedAddon } = require('./common/privateAddons');
++
++// The private desktop build is intentionally accountless. Preserve the local
++// addon/library snapshot, but remove the Stremio API session before the core
++// worker reads it. This changes only the pinned loopback UI origin.
++const privateLocalMode = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
++if (privateLocalMode) {
++    try {
++        const rawProfile = window.localStorage.getItem('profile');
++        if (rawProfile) {
++            const localProfile = JSON.parse(rawProfile);
++            localProfile.auth = null;
++            localProfile.addonsLocked = false;
++            localProfile.settings = {
++                ...(localProfile.settings || {}),
++                streamingServerUrl: 'http://127.0.0.1:11470/',
++                sendCrashReports: false,
++                discordRpcEnabled: false,
++            };
++            window.localStorage.setItem('profile', JSON.stringify(localProfile));
++        }
++    } catch (error) {
++        console.error('Failed to prepare the local-only profile:', error);
++    }
+ }
+ 
++const preparePrivateAddons = async () => {
++    if (!privateLocalMode) return;
++    if ('serviceWorker' in navigator) {
++        try {
++            const registrations = await navigator.serviceWorker.getRegistrations();
++            await Promise.all(registrations.map((registration) => registration.unregister()));
++        } catch (error) {
++            console.warn('Could not remove the legacy service worker:', error);
++        }
++    }
++    if ('caches' in window) {
++        try {
++            const cacheNames = await window.caches.keys();
++            await Promise.all(cacheNames.map((cacheName) => window.caches.delete(cacheName)));
++        } catch (error) {
++            console.warn('Could not clear the legacy web cache:', error);
++        }
++    }
++    let addonIndex = null;
++    for (let attempt = 0; attempt < 10 && addonIndex === null; attempt += 1) {
++        try {
++            const response = await fetch('http://127.0.0.1:17100/addons/index.json', { cache: 'no-store' });
++            if (!response.ok) throw new Error(`HTTP ${response.status}`);
++            addonIndex = await response.json();
++        } catch (error) {
++            if (attempt === 9) {
++                console.warn('Private addon index was not ready before core startup:', error);
++                break;
++            }
++            await new Promise((resolve) => window.setTimeout(resolve, 250));
++        }
++    }
++    if (!Array.isArray(addonIndex?.addons)) return;
++    try {
++        const rawProfile = window.localStorage.getItem('profile');
++        if (!rawProfile) return;
++        const localProfile = JSON.parse(rawProfile);
++        const existing = Array.isArray(localProfile.addons) ? localProfile.addons : [];
++        const customIds = new Set(addonIndex.addons.map((addon) => addon?.manifest?.id).filter(Boolean));
++        const customUrls = new Set(addonIndex.addons.map((addon) => addon?.transportUrl).filter(Boolean));
++        const retained = existing.filter((addon) => (
++            !isPrivateBlockedAddon(addon) &&
++            !customIds.has(addon?.manifest?.id) &&
++            !customUrls.has(addon?.transportUrl) &&
++            !addon?.manifest?.id?.startsWith('local.privacy.')
++        ));
++        localProfile.auth = null;
++        localProfile.addonsLocked = false;
++        localProfile.addons = [...retained, ...addonIndex.addons];
++        window.localStorage.setItem('profile', JSON.stringify(localProfile));
++    } catch (error) {
++        console.error('Failed to install the private addon set before core startup:', error);
++    }
++};
++
+ const Bowser = require('bowser');
+ const browser = Bowser.parse(window.navigator?.userAgent || '');
+ if (browser?.platform?.type === 'desktop') {
+@@ -43,7 +123,7 @@ const appInfo = {
+ };
+ 
+ const root = ReactDOM.createRoot(document.getElementById('app'));
+-root.render(
++void preparePrivateAddons().finally(() => root.render(
+     <React.StrictMode>
+         <PlatformProvider>
+             <CoreProvider appInfo={appInfo}>
+@@ -58,4 +138,4 @@ root.render(
+             </CoreProvider>
+         </PlatformProvider>
+     </React.StrictMode>
+-);
++));
+diff --git a/src/router/Routes.tsx b/src/router/Routes.tsx
+index 24ebcbc..7e3a4a4 100644
+--- a/src/router/Routes.tsx
++++ b/src/router/Routes.tsx
+@@ -17,6 +17,8 @@ type CachedView = {
+ };
+ 
+ const VIEW_COUNT = Math.max(...routerPaths.map((route) => route.view)) + 1;
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
+ 
+ const getRouteForLocation = (location: Location) => {
+     return routerPaths.find((route) => matchPath({ path: route.path, end: true }, location.pathname));
+@@ -57,6 +59,13 @@ const Routes = () => {
+      * Replaced onRouteChange with following useEffect:
+      */
+     React.useEffect(() => {
++        if (PRIVATE_LOCAL_MODE) {
++            if (location.pathname === '/intro') {
++                navigate('/', { replace: true });
++            }
++            previousAuthRef.current = profile.auth;
++            return;
++        }
+         // Handle redirect if user logs out
+         if (previousAuthRef.current !== null && profile.auth === null) {
+             previousAuthRef.current = profile.auth;
+diff --git a/src/routes/Addons/Addons.js b/src/routes/Addons/Addons.js
+index b146de0..1d9654d 100644
+--- a/src/routes/Addons/Addons.js
++++ b/src/routes/Addons/Addons.js
+@@ -19,6 +19,11 @@ const useSelectableInputs = require('./useSelectableInputs');
+ const styles = require('./styles');
+ const { AddonPlaceholder } = require('./AddonPlaceholder');
+ 
++const PRIVATE_STATUS_URL = 'http://127.0.0.1:17100/addons/status.json';
++const PRIVATE_HEADING = ['Stremio Private', 'local connectors'].join(' ');
++const CREDENTIALS_LABEL = ['Credentials', ':'].join('');
++const CREDENTIALS_FILE_READY = ['File created', '· mode 0600'].join(' ');
++
+ const Addons = () => {
+     const { type, transportUrl, catalogId } = useParams();
+     const [queryParams] = useSearchParams();
+@@ -37,6 +42,30 @@ const Addons = () => {
+     const selectInputs = useSelectableInputs(installedAddons, remoteAddons);
+     const [filtersModalOpen, openFiltersModal, closeFiltersModal] = useBinaryState(false);
+     const [addAddonModalOpen, openAddAddonModal, closeAddAddonModal] = useBinaryState(false);
++    const [privateStatus, setPrivateStatus] = React.useState(null);
++    const [privateStatusError, setPrivateStatusError] = React.useState(false);
++    React.useEffect(() => {
++        let cancelled = false;
++        const loadStatus = async () => {
++            for (let attempt = 0; attempt < 8; attempt += 1) {
++                try {
++                    const response = await fetch(PRIVATE_STATUS_URL, { cache: 'no-store' });
++                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
++                    const status = await response.json();
++                    if (!cancelled) {
++                        setPrivateStatus(status);
++                        setPrivateStatusError(false);
++                    }
++                    return;
++                } catch (_error) {
++                    if (attempt === 7 && !cancelled) setPrivateStatusError(true);
++                    await new Promise((resolve) => window.setTimeout(resolve, 250));
++                }
++            }
++        };
++        void loadStatus();
++        return () => { cancelled = true; };
++    }, []);
+     const addAddonUrlInputRef = React.useRef(null);
+     const addAddonOnSubmit = React.useCallback(() => {
+         if (addAddonUrlInputRef.current !== null) {
+@@ -130,6 +159,34 @@ const Addons = () => {
+     return (
+         <MainNavBars className={styles['addons-container']} route={'addons'}>
+             <div className={styles['addons-content']}>
++                <div className={styles['private-status-container']} data-private-build={privateStatus?.build || 'loading'}>
++                    <div className={styles['private-status-heading']}>
++                        <span>{PRIVATE_HEADING}</span>
++                        <span className={styles['private-build']}>{privateStatus?.build || 'checking local runtime…'}</span>
++                    </div>
++                    <div className={styles['private-status-path']}>
++                        {CREDENTIALS_LABEL} {privateStatus?.credentials?.displayPath || '~/Library/Application Support/Stremio Private/.env'}
++                    </div>
++                    <div className={styles['private-status-items']}>
++                        {[
++                            ['Trakt', 'trakt'],
++                            ['Premiumize', 'premiumize'],
++                            ['TMDB', 'tmdb'],
++                            ['Local TV', 'local-playlist']
++                        ].map(([label, id]) => (
++                            <span key={id} className={classnames(
++                                styles['private-status-item'],
++                                privateStatus?.connectors?.[id] ? styles['configured'] : styles['not-configured']
++                            )}>
++                                {label}: {privateStatus?.connectors?.[id] ? 'configured' : 'not configured'}
++                            </span>
++                        ))}
++                    </div>
++                    <div className={styles['private-status-footer']}>
++                        <span>{privateStatusError ? 'Local runtime unavailable.' : 'Restart the app after editing; secret values never appear here.'}</span>
++                        <span className={styles['credentials-ready']}>{CREDENTIALS_FILE_READY}</span>
++                    </div>
++                </div>
+                 <div className={styles['selectable-inputs-container']}>
+                     {selectInputs.map((selectInput, index) => (
+                         <MultiselectMenu
+diff --git a/src/routes/Addons/styles.less b/src/routes/Addons/styles.less
+index f08b65d..91d4ece 100644
+--- a/src/routes/Addons/styles.less
++++ b/src/routes/Addons/styles.less
+@@ -26,6 +26,76 @@
+         flex-direction: column;
+         align-self: stretch;
+ 
++        .private-status-container {
++            flex: none;
++            margin: 1.5rem 1.5rem 0;
++            padding: 1rem 1.25rem;
++            border: 1px solid var(--secondary-accent-color);
++            border-radius: var(--border-radius);
++            background: var(--overlay-color);
++            color: var(--primary-foreground-color);
++
++            .private-status-heading,
++            .private-status-footer,
++            .private-status-items {
++                display: flex;
++                align-items: center;
++                gap: 0.75rem;
++                flex-wrap: wrap;
++            }
++
++            .private-status-heading {
++                justify-content: space-between;
++                font-size: 1.15rem;
++                font-weight: 700;
++            }
++
++            .private-build {
++                font-size: 0.85rem;
++                font-weight: 400;
++                opacity: 0.65;
++            }
++
++            .private-status-path {
++                margin-top: 0.5rem;
++                overflow-wrap: anywhere;
++                font-family: monospace;
++                user-select: text;
++            }
++
++            .private-status-items {
++                margin-top: 0.75rem;
++            }
++
++            .private-status-item {
++                padding: 0.25rem 0.6rem;
++                border-radius: 1rem;
++                background: var(--primary-background-color);
++
++                &.configured {
++                    color: #77e59c;
++                }
++
++                &.not-configured {
++                    opacity: 0.7;
++                }
++            }
++
++            .private-status-footer {
++                justify-content: space-between;
++                margin-top: 0.75rem;
++                font-size: 0.9rem;
++                opacity: 0.9;
++            }
++
++            .credentials-ready {
++                padding: 0.45rem 1rem;
++                border-radius: 2rem;
++                background: var(--primary-background-color);
++                color: #77e59c;
++            }
++        }
++
+         .addons-list-container {
+             padding: 0 1.5rem;
+             z-index: 1;
+@@ -309,4 +379,4 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/routes/Calendar/Calendar.tsx b/src/routes/Calendar/Calendar.tsx
+index 1ff09cb..b0a5d6b 100644
+--- a/src/routes/Calendar/Calendar.tsx
++++ b/src/routes/Calendar/Calendar.tsx
+@@ -15,6 +15,9 @@ import useCalendarDate from './useCalendarDate';
+ import styles from './Calendar.less';
+ import classNames from 'classnames';
+ 
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
++
+ const Calendar = () => {
+     const { year, month } = useParams();
+     const urlParams = React.useMemo(() => ({
+@@ -40,7 +43,7 @@ const Calendar = () => {
+     return (
+         <MainNavBars className={styles['calendar']} route={'calendar'}>
+             {
+-                profile.auth !== null ?
++                profile.auth !== null || PRIVATE_LOCAL_MODE ?
+                     <div className={classNames(styles['content'], 'animation-fade-in')}>
+                         <div className={styles['main']}>
+                             <Selector
+diff --git a/src/routes/Library/Library.js b/src/routes/Library/Library.js
+index 53b1d32..9f0fec7 100644
+--- a/src/routes/Library/Library.js
++++ b/src/routes/Library/Library.js
+@@ -16,6 +16,8 @@ const useSelectableInputs = require('./useSelectableInputs');
+ const styles = require('./styles');
+ 
+ const SCROLL_TO_BOTTOM_TRESHOLD = 400;
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
+ 
+ function withModel(Library) {
+     const LibraryWithModel = () => {
+@@ -73,7 +75,7 @@ const Library = ({ model }) => {
+     return (
+         <MainNavBars className={styles['library-container']} route={model}>
+             {
+-                profile.auth !== null ?
++                profile.auth !== null || PRIVATE_LOCAL_MODE ?
+                     <div className={styles['library-content']}>
+                         <div className={styles['selectable-inputs-container']}>
+                             <MultiselectMenu {...typeSelect} className={styles['select-input-container']} />
+diff --git a/src/routes/MetaDetails/StreamsList/StreamsList.js b/src/routes/MetaDetails/StreamsList/StreamsList.js
+index b5d5b04..38a9110 100644
+--- a/src/routes/MetaDetails/StreamsList/StreamsList.js
++++ b/src/routes/MetaDetails/StreamsList/StreamsList.js
+@@ -14,6 +14,7 @@ const Stream = require('./Stream');
+ const styles = require('./styles');
+ const { usePlatform, useProfile } = require('stremio/common');
+ const { default: SeasonEpisodePicker } = require('../EpisodePicker');
++const { isPrivateBlockedAddon } = require('../../../common/privateAddons');
+ 
+ const ALL_ADDONS_KEY = 'ALL';
+ 
+@@ -50,6 +51,7 @@ const StreamsList = ({ className, video, type, externalPlayerCallbackCanMarkWatc
+     const streamsByAddon = React.useMemo(() => {
+         return props.streams
+             .filter((streams) => streams.content.type === 'Ready')
++            .filter((streams) => !isPrivateBlockedAddon(streams.addon))
+             .reduce((streamsByAddon, streams) => {
+                 streamsByAddon[streams.addon.transportUrl] = {
+                     addon: streams.addon,
+diff --git a/src/routes/Settings/General/General.tsx b/src/routes/Settings/General/General.tsx
+index a5b8409..57a7604 100644
+--- a/src/routes/Settings/General/General.tsx
++++ b/src/routes/Settings/General/General.tsx
+@@ -12,6 +12,9 @@ type Props = {
+     profile: Profile,
+ };
+ 
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
++
+ const General = forwardRef<HTMLDivElement, Props>(({ profile }: Props, ref) => {
+     const { t } = useTranslation();
+     const core = useCore();
+@@ -146,11 +149,14 @@ const General = forwardRef<HTMLDivElement, Props>(({ profile }: Props, ref) => {
+                         href={`https://www.strem.io/reset-password/${profile.auth.user.email}`}
+                     />
+             }
+-            <Option className={styles['trakt-container']} icon={'trakt'} label={t('SETTINGS_TRAKT')}>
+-                <Button className={'button'} title={isTraktAuthenticated ? t('LOG_OUT') : t('SETTINGS_TRAKT_AUTHENTICATE')} disabled={profile.auth === null} tabIndex={-1} onClick={onToggleTrakt}>
+-                    {isTraktAuthenticated ? t('LOG_OUT') : t('SETTINGS_TRAKT_AUTHENTICATE')}
+-                </Button>
+-            </Option>
++            {
++                !PRIVATE_LOCAL_MODE &&
++                    <Option className={styles['trakt-container']} icon={'trakt'} label={t('SETTINGS_TRAKT')}>
++                        <Button className={'button'} title={isTraktAuthenticated ? t('LOG_OUT') : t('SETTINGS_TRAKT_AUTHENTICATE')} disabled={profile.auth === null} tabIndex={-1} onClick={onToggleTrakt}>
++                            {isTraktAuthenticated ? t('LOG_OUT') : t('SETTINGS_TRAKT_AUTHENTICATE')}
++                        </Button>
++                    </Option>
++            }
+             {
+                 discord.available &&
+                     <Option className={styles['discord-container']} icon={'discord'} label={'SETTINGS_DISCORD'}>
+diff --git a/src/routes/Settings/General/User/User.tsx b/src/routes/Settings/General/User/User.tsx
+index 620c41b..6e80052 100644
+--- a/src/routes/Settings/General/User/User.tsx
++++ b/src/routes/Settings/General/User/User.tsx
+@@ -8,6 +8,9 @@ type Props = {
+     profile: Profile,
+ };
+ 
++const PRIVATE_LOCAL_MODE = ['127.0.0.1', 'localhost'].includes(window.location.hostname) &&
++    (/^1147[0-4]$/.test(window.location.port) || window.location.port === '18080');
++
+ const User = ({ profile }: Props) => {
+     const { t } = useTranslation();
+     const core = useCore();
+@@ -39,23 +42,26 @@ const User = ({ profile }: Props) => {
+                     style={{ backgroundImage: avatar }}
+                 />
+                 <div className={styles['email-logout-container']}>
+-                    <div className={styles['email-label-container']} title={profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}>
++                    <div className={styles['email-label-container']} title={PRIVATE_LOCAL_MODE ? 'Local Profile' : profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}>
+                         <div className={styles['email-label']}>
+-                            {profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}
++                            {PRIVATE_LOCAL_MODE ? 'Local Profile' : profile.auth === null ? t('ANONYMOUS_USER') : profile.auth.user.email}
+                         </div>
+                     </div>
+                     {
+-                        profile.auth !== null ?
+-                            <Link
+-                                label={t('LOG_OUT')}
+-                                onClick={onLogout}
+-                            />
++                        PRIVATE_LOCAL_MODE ?
++                            null
+                             :
+-                            <Link
+-                                label={`${t('LOG_IN')} / ${t('SIGN_UP')}`}
+-                                href={'#/intro'}
+-                                target={'_self'}
+-                            />
++                            profile.auth !== null ?
++                                <Link
++                                    label={t('LOG_OUT')}
++                                    onClick={onLogout}
++                                />
++                                :
++                                <Link
++                                    label={`${t('LOG_IN')} / ${t('SIGN_UP')}`}
++                                    href={'#/intro'}
++                                    target={'_self'}
++                                />
+                     }
+                 </div>
+             </div>
+diff --git a/webpack.config.js b/webpack.config.js
+index 992e0ff..03c6856 100644
+--- a/webpack.config.js
++++ b/webpack.config.js
+@@ -12,7 +12,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
+ const TerserPlugin = require('terser-webpack-plugin');
+ const packageJson = require('./package.json');
+ 
+-const COMMIT_HASH = execSync('git rev-parse HEAD').toString().trim();
++const COMMIT_HASH = `${execSync('git rev-parse HEAD').toString().trim()}-private-r13`;
++const SERVICE_WORKER_DISABLED = true;
+ 
+ const THREAD_LOADER = {
+     loader: 'thread-loader',
+@@ -219,7 +220,7 @@ module.exports = (env, argv) => ({
+         new webpack.EnvironmentPlugin({
+             SENTRY_DSN: null,
+             ...env,
+-            SERVICE_WORKER_DISABLED: false,
++            SERVICE_WORKER_DISABLED,
+             DEBUG: argv.mode !== 'production',
+             VERSION: packageJson.version,
+             COMMIT_HASH
+@@ -227,7 +228,7 @@ module.exports = (env, argv) => ({
+         new webpack.ProvidePlugin({
+             Buffer: ['buffer', 'Buffer']
+         }),
+-        argv.mode === 'production' &&
++        argv.mode === 'production' && !SERVICE_WORKER_DISABLED &&
+             new WorkboxPlugin.GenerateSW({
+                 maximumFileSizeToCacheInBytes: 20000000,
+                 clientsClaim: true,
+diff --git a/src/common/privateAddons.js b/src/common/privateAddons.js
+new file mode 100644
+index 0000000..c5bbef5
+--- /dev/null
++++ b/src/common/privateAddons.js
+@@ -0,0 +1,19 @@
++// Copyright (C) 2017-2023 Smart code 203358507
++
++const BLOCKED_PURCHASE_ADDON_IDS = new Set([
++    'org.stremio.watchhub',
++]);
++
++const isPrivateBlockedAddon = (addon) => {
++    const id = String(addon?.manifest?.id || '').toLowerCase();
++    const name = String(addon?.manifest?.name || '').toLowerCase();
++    const transportUrl = String(addon?.transportUrl || '').toLowerCase();
++
++    return BLOCKED_PURCHASE_ADDON_IDS.has(id) ||
++        name === 'watchhub' ||
++        transportUrl.includes('watchhub.strem.io');
++};
++
++module.exports = {
++    isPrivateBlockedAddon,
++};
+diff --git a/tests/privateAddons.spec.js b/tests/privateAddons.spec.js
+new file mode 100644
+index 0000000..e02ce14
+--- /dev/null
++++ b/tests/privateAddons.spec.js
+@@ -0,0 +1,20 @@
++// Copyright (C) 2017-2023 Smart code 203358507
++
++const { isPrivateBlockedAddon } = require('../src/common/privateAddons');
++
++describe('private addon policy', () => {
++    test.each([
++        [{ manifest: { id: 'org.stremio.watchhub', name: 'WatchHub' }, transportUrl: 'https://watchhub.strem.io/manifest.json' }],
++        [{ manifest: { id: 'future.watch-provider', name: 'WatchHub' }, transportUrl: 'https://example.test/manifest.json' }],
++        [{ manifest: { id: 'future.watch-provider', name: 'Provider' }, transportUrl: 'https://watchhub.strem.io/manifest.json' }],
++    ])('blocks WatchHub purchase sources', (addon) => {
++        expect(isPrivateBlockedAddon(addon)).toBe(true);
++    });
++
++    test('keeps playable local and privacy addons', () => {
++        expect(isPrivateBlockedAddon({
++            manifest: { id: 'local.privacy.premiumize', name: 'Private Premiumize' },
++            transportUrl: 'http://127.0.0.1:17100/addons/premiumize/manifest.json',
++        })).toBe(false);
++    });
++});
