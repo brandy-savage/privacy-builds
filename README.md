@@ -22,6 +22,8 @@ local testing; they have not received a security audit.
 | Discord for Android | 348.10 Stable | Audit and version-pinned apktool/smali patch | Split APK set; login screen tested on Android 17 |
 | X for Android | 12.33.1-prod.01 | Audit and version-pinned manifest patch | Split APK set; login screen tested on Android 17 |
 | Bluesky for Android | 1.134.0 | Audit and version-pinned apktool/smali patch | Split APK set; login screen tested on Android 17 |
+| Claude for Android | 1.260923.20 | Audit and version-pinned apktool/smali patch | Split APK set; rebuilt and signature-verified, not device-tested |
+| ChatGPT for Android | 1.2026.279 | Audit and version-pinned apktool manifest patch | Split APK set; rebuilt and signature-verified, not device-tested |
 
 The source tree contains only the work added for these experiments and the
 notes needed to reproduce or inspect it. It is not a complete source release of
