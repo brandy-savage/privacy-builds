@@ -1,0 +1,59 @@
+{
+  "apps": [
+    {
+      "id": "com.google.android.gm",
+      "url": "https://github.com/brandy-savage/privacy-builds",
+      "author": "brandy-savage",
+      "name": "Gmail experimental stripped build",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^Privacy builds snapshot\",\"verifyLatestTag\":false,\"useLatestAssetDateAsReleaseDate\":true,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionDetection\":true,\"releaseDateAsVersion\":false,\"apkFilterRegEx\":\"^gmail-privacy-.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"appName\":\"Gmail experimental stripped build\",\"about\":\"Unofficial experiment; may not work\",\"includeZips\":false,\"zippedApkFilterRegEx\":\"\"}",
+      "categories": ["Experimental"],
+      "allowIdChange": false,
+      "overrideSource": "GitHub"
+    },
+    {
+      "id": "com.facebook.orca",
+      "url": "https://github.com/brandy-savage/privacy-builds",
+      "author": "brandy-savage",
+      "name": "Messenger experimental stripped build",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^Privacy builds snapshot\",\"verifyLatestTag\":false,\"useLatestAssetDateAsReleaseDate\":true,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionDetection\":true,\"releaseDateAsVersion\":false,\"apkFilterRegEx\":\"^messenger-privacy-.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"appName\":\"Messenger experimental stripped build\",\"about\":\"Unofficial experiment; may not work\",\"includeZips\":false,\"zippedApkFilterRegEx\":\"\"}",
+      "categories": ["Experimental"],
+      "allowIdChange": false,
+      "overrideSource": "GitHub"
+    },
+    {
+      "id": "com.spotify.music",
+      "url": "https://github.com/brandy-savage/privacy-builds",
+      "author": "brandy-savage",
+      "name": "Spotify experimental stripped build",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^Privacy builds snapshot\",\"verifyLatestTag\":false,\"useLatestAssetDateAsReleaseDate\":true,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionDetection\":true,\"releaseDateAsVersion\":false,\"apkFilterRegEx\":\"^spotify-privacy-.*\\\\.apk$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"appName\":\"Spotify experimental stripped build\",\"about\":\"Unofficial experiment; may not work\",\"includeZips\":false,\"zippedApkFilterRegEx\":\"\"}",
+      "categories": ["Experimental"],
+      "allowIdChange": false,
+      "overrideSource": "GitHub"
+    },
+    {
+      "id": "com.facebook.katana",
+      "url": "https://github.com/brandy-savage/privacy-builds",
+      "author": "brandy-savage",
+      "name": "Facebook experimental stripped build",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^Privacy builds snapshot\",\"verifyLatestTag\":false,\"useLatestAssetDateAsReleaseDate\":true,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionDetection\":true,\"releaseDateAsVersion\":false,\"apkFilterRegEx\":\"^facebook-privacy-.*-split-apks\\\\.zip$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"appName\":\"Facebook experimental stripped build\",\"about\":\"Unofficial split-APK experiment; may not work\",\"includeZips\":true,\"zippedApkFilterRegEx\":\"^(base|split_config\\\\.xxhdpi)\\\\.apk$\"}",
+      "categories": ["Experimental"],
+      "allowIdChange": false,
+      "overrideSource": "GitHub"
+    },
+    {
+      "id": "com.stremio.one",
+      "url": "https://github.com/brandy-savage/privacy-builds",
+      "author": "brandy-savage",
+      "name": "Stremio experimental stripped build",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"includePrereleases\":true,\"fallbackToOlderReleases\":true,\"filterReleaseTitlesByRegEx\":\"^Privacy builds snapshot\",\"verifyLatestTag\":false,\"useLatestAssetDateAsReleaseDate\":true,\"releaseTitleAsVersion\":false,\"trackOnly\":false,\"versionDetection\":true,\"releaseDateAsVersion\":false,\"apkFilterRegEx\":\"^stremio-private-.*-split-apks\\\\.zip$\",\"invertAPKFilter\":false,\"autoApkFilterByArch\":false,\"appName\":\"Stremio experimental stripped build\",\"about\":\"Unofficial arm64 split-APK experiment; may not work\",\"includeZips\":true,\"zippedApkFilterRegEx\":\"(^|/)(base|split_config\\\\.(arm64_v8a|en|xxhdpi))\\\\.apk$\"}",
+      "categories": ["Experimental"],
+      "allowIdChange": false,
+      "overrideSource": "GitHub"
+    }
+  ]
+}
